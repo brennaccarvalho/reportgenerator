@@ -1,10 +1,16 @@
 """Página 6 — Relatórios publicados."""
 
 import os
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.config.db import init_db, get_connection
 from app.config.settings import PUBLISHED_REPORTS_DIR, SUPPORTED_FRAMEWORKS

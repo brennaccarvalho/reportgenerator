@@ -1,7 +1,14 @@
 """Página 4 — Builder: configuração do relatório."""
 
+import sys
+from pathlib import Path
+
 import streamlit as st
 import pandas as pd
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.models.report_model import ReportConfig
 from app.services.framework_selector import run_framework
