@@ -25,7 +25,7 @@ data/reports.db
 data/published_reports/
 
 # Streamlit cache
-.streamlit/
+# .streamlit/ # permite config.toml no repo
 
 # IDEs
 .vscode/
