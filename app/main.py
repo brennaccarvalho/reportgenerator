@@ -10,6 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.config.db import init_db
+from app.components.sidebar import render_sidebar
 
 st.set_page_config(
     page_title="Report Generator",
@@ -39,26 +40,7 @@ for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
 
-# Sidebar de navegação
-with st.sidebar:
-    st.image("https://img.icons8.com/color/96/combo-chart--v2.png", width=64)
-    st.title("Report Generator")
-    st.markdown("---")
-
-    steps = [
-        ("01_upload", "1. Upload de Dados"),
-        ("02_processing", "2. Processamento"),
-        ("03_framework", "3. Framework"),
-        ("04_builder", "4. Builder"),
-        ("05_preview", "5. Preview"),
-        ("06_published", "6. Publicados"),
-    ]
-
-    for page_id, label in steps:
-        st.page_link(f"pages/{page_id}.py", label=label)
-
-    st.markdown("---")
-    st.caption("v1.0.0 — Report Generator")
+render_sidebar()
 
 # Home / Dashboard de status
 st.title("📊 Report Generator")
@@ -95,7 +77,25 @@ with col3:
 
 st.divider()
 
-# Guia de início rápido
+# Próximo passo sugerido
+if st.session_state.raw_df is None:
+    st.markdown("**Comece agora — faça o upload dos seus dados:**")
+    st.page_link("pages/01_upload.py", label="Fazer upload de dados →", icon="📂")
+elif st.session_state.processed_df is None:
+    st.markdown("**Próximo passo:**")
+    st.page_link("pages/02_processing.py", label="Processar dados →", icon="⚙️")
+elif st.session_state.framework_id is None:
+    st.markdown("**Próximo passo:**")
+    st.page_link("pages/03_framework.py", label="Escolher framework →", icon="🧩")
+elif st.session_state.framework_sections is None:
+    st.markdown("**Próximo passo:**")
+    st.page_link("pages/04_builder.py", label="Configurar relatório →", icon="🛠️")
+else:
+    st.markdown("**Relatório pronto — veja o resultado:**")
+    st.page_link("pages/05_preview.py", label="Ver preview →", icon="👁️")
+
+st.divider()
+
 st.markdown("### Como usar")
 st.markdown(
     """
@@ -103,11 +103,7 @@ st.markdown(
 2. **Processamento** — Os dados são limpos e normalizados automaticamente
 3. **Framework** — Escolha a lente analítica: OODA, Funil, Performance, EDA ou Temporal
 4. **Builder** — Configure dimensões, métricas e filtros
-5. **Preview** — Veja o relatório interativo e edite os gráficos
-6. **Publicar** — Exporte em PDF, HTML ou CSV, ou publique para acesso posterior
+5. **Preview** — Veja o relatório interativo e exporte em PDF, HTML ou CSV
+6. **Publicados** — Acesse relatórios salvos anteriormente
     """
 )
-
-st.divider()
-st.markdown("**Comece agora:**")
-st.page_link("pages/01_upload.py", label="Fazer upload de dados →", icon="📂")

@@ -12,8 +12,13 @@ if str(PROJECT_ROOT) not in sys.path:
 from app.services.data_cleaner import clean_dataframe
 from app.services.data_profiler import profile_dataframe
 from app.components.data_summary import render_data_summary
+from app.components.sidebar import render_sidebar
+from app.components.step_header import render_step_header
 
 st.set_page_config(page_title="Processamento — Report Generator", layout="wide")
+
+render_sidebar()
+render_step_header(2)
 
 st.title("2. Processamento dos Dados")
 
@@ -39,14 +44,6 @@ if st.session_state.get("processed_df") is None:
 processed_df = st.session_state.processed_df
 profile = st.session_state.profile
 
-# Botão para reprocessar
-if st.button("Reprocessar dados"):
-    processed_df, transformations_log = clean_dataframe(raw_df)
-    profile = profile_dataframe(processed_df, transformations_log)
-    st.session_state.processed_df = processed_df
-    st.session_state.profile = profile
-    st.rerun()
-
 st.markdown("### Resumo do Dataset Processado")
 render_data_summary(profile)
 
@@ -63,4 +60,15 @@ else:
     st.dataframe(processed_df.head(20), use_container_width=True)
 
 st.divider()
-st.page_link("pages/03_framework.py", label="Próximo: Escolher Framework →", icon="🧩")
+
+col_btn, col_nav = st.columns([1, 2])
+with col_btn:
+    if st.button("Reprocessar dados", key="btn_reprocess"):
+        processed_df, transformations_log = clean_dataframe(raw_df)
+        profile = profile_dataframe(processed_df, transformations_log)
+        st.session_state.processed_df = processed_df
+        st.session_state.profile = profile
+        st.rerun()
+
+with col_nav:
+    st.page_link("pages/03_framework.py", label="Próximo: Escolher Framework →", icon="🧩")

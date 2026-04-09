@@ -12,8 +12,13 @@ if str(PROJECT_ROOT) not in sys.path:
 from app.services.file_loader import load_file
 from app.services.google_sheets_loader import list_sheets, load_sheet
 from app.utils.validators import validate_google_sheets_url
+from app.components.sidebar import render_sidebar
+from app.components.step_header import render_step_header
 
 st.set_page_config(page_title="Upload — Report Generator", layout="wide")
+
+render_sidebar()
+render_step_header(1)
 
 st.title("1. Carregar Dados")
 st.markdown(
@@ -21,12 +26,9 @@ st.markdown(
 )
 
 # Inicializar estado
-if "raw_df" not in st.session_state:
-    st.session_state.raw_df = None
-if "source_name" not in st.session_state:
-    st.session_state.source_name = None
-if "source_type" not in st.session_state:
-    st.session_state.source_type = None
+for key in ["raw_df", "source_name", "source_type"]:
+    if key not in st.session_state:
+        st.session_state[key] = None
 
 tab_file, tab_sheets = st.tabs(["Arquivo (.csv / .xlsx)", "Google Sheets"])
 
@@ -47,14 +49,13 @@ with tab_file:
             st.markdown("**Preview das primeiras 5 linhas:**")
             st.dataframe(df.head(), use_container_width=True)
 
-            if st.button("Usar este arquivo", type="primary", key="btn_use_file"):
+            if st.button("Usar este arquivo e continuar →", type="primary", key="btn_use_file", use_container_width=True):
                 st.session_state.raw_df = df
                 st.session_state.source_name = uploaded.name
                 st.session_state.source_type = "upload"
-                # Limpar estado de etapas posteriores
                 for key in ["processed_df", "profile", "framework_id", "framework_sections", "insights", "report_config"]:
                     st.session_state.pop(key, None)
-                st.success("Dados carregados! Vá para a etapa **Processamento**.")
+                st.switch_page("pages/02_processing.py")
 
         except ValueError as e:
             st.error(f"Erro: {e}")
@@ -68,7 +69,6 @@ with tab_sheets:
         placeholder="https://docs.google.com/spreadsheets/d/...",
     )
 
-    sheet_names = []
     if url:
         if not validate_google_sheets_url(url):
             st.error("URL inválida. Copie diretamente do navegador.")
@@ -88,20 +88,19 @@ with tab_sheets:
             options=st.session_state["_gs_sheets"],
             key="gs_sheet_select",
         )
-        if st.button("Carregar aba", type="primary", key="btn_load_sheet"):
+        if st.button("Carregar aba e continuar →", type="primary", key="btn_load_sheet", use_container_width=True):
             with st.spinner("Carregando dados..."):
                 try:
                     gs_url = st.session_state.get("_gs_url", url)
                     df, msg = load_sheet(gs_url, selected_sheet)
                     st.success(msg)
-                    st.dataframe(df.head(), use_container_width=True)
 
                     st.session_state.raw_df = df
                     st.session_state.source_name = f"{gs_url} / {selected_sheet}"
                     st.session_state.source_type = "google_sheets"
                     for key in ["processed_df", "profile", "framework_id", "framework_sections", "insights", "report_config"]:
                         st.session_state.pop(key, None)
-                    st.success("Dados carregados! Vá para a etapa **Processamento**.")
+                    st.switch_page("pages/02_processing.py")
                 except ValueError as e:
                     st.error(f"Erro: {e}")
                 except Exception as e:
@@ -116,5 +115,3 @@ if st.session_state.raw_df is not None:
         f"— {len(df):,} linhas × {len(df.columns)} colunas"
     )
     st.page_link("pages/02_processing.py", label="Próximo: Processamento →", icon="⚙️")
-else:
-    st.info("Nenhum dado carregado ainda.")

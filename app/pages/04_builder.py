@@ -13,8 +13,13 @@ if str(PROJECT_ROOT) not in sys.path:
 from app.models.report_model import ReportConfig
 from app.services.framework_selector import run_framework
 from app.services.insight_generator import generate_insights
+from app.components.sidebar import render_sidebar
+from app.components.step_header import render_step_header
 
 st.set_page_config(page_title="Builder — Report Generator", layout="wide")
+
+render_sidebar()
+render_step_header(4)
 
 st.title("4. Configurar o Relatório")
 
@@ -104,7 +109,7 @@ st.markdown(f"_Dataset após filtros: **{len(filtered_df):,} linhas**_")
 
 st.divider()
 
-if st.button("Gerar análise", type="primary", use_container_width=True):
+if st.button("Gerar análise e ver preview →", type="primary", use_container_width=True):
     if filtered_df.empty:
         st.error("Os filtros aplicados resultaram em dataset vazio. Ajuste os filtros.")
         st.stop()
@@ -128,12 +133,16 @@ if st.button("Gerar análise", type="primary", use_container_width=True):
             st.session_state.report_config = config
             st.session_state.filtered_df = filtered_df
             st.session_state.report_name = report_name
-
-            st.success(f"Análise gerada: {len(sections)} seção(ões) | {len(insights)} insight(s).")
+            # Limpar exports anteriores ao regenerar
+            for k in ["_export_pdf", "_export_html", "_export_csv"]:
+                st.session_state.pop(k, None)
 
         except Exception as e:
             st.error(f"Erro ao gerar análise: {e}")
             st.stop()
 
+    st.switch_page("pages/05_preview.py")
+
+# Link de navegação se análise já existe
 if st.session_state.get("framework_sections"):
-    st.page_link("pages/05_preview.py", label="Próximo: Preview do Relatório →", icon="👁️")
+    st.page_link("pages/05_preview.py", label="Ver preview do relatório →", icon="👁️")

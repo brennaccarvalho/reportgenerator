@@ -10,8 +10,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.config.settings import SUPPORTED_FRAMEWORKS
+from app.components.sidebar import render_sidebar
+from app.components.step_header import render_step_header
 
 st.set_page_config(page_title="Framework — Report Generator", layout="wide")
+
+render_sidebar()
+render_step_header(3)
 
 st.title("3. Escolha o Framework Analítico")
 st.markdown(
@@ -77,6 +82,36 @@ FRAMEWORK_DESCRIPTIONS = {
     },
 }
 
+
+def _suggest_framework(profile: dict) -> str | None:
+    """Sugere framework baseado no perfil dos dados."""
+    if not profile:
+        return None
+    types = [c["inferred_type"] for c in profile.get("columns", [])]
+    if "data" in types:
+        return "temporal"
+    cats = types.count("categórico")
+    nums = types.count("numérico")
+    if cats >= 2 and nums >= 1:
+        return "funnel"
+    if nums >= 3:
+        return "performance"
+    return "eda"
+
+
+profile = st.session_state.get("profile")
+suggested = _suggest_framework(profile)
+
+if suggested:
+    suggested_name = FRAMEWORK_DESCRIPTIONS[suggested]["name"]
+    st.info(
+        f"💡 **Recomendado para seus dados:** {FRAMEWORK_DESCRIPTIONS[suggested]['icon']} {suggested_name} "
+        f"— baseado no perfil das colunas detectadas.",
+        icon=None,
+    )
+
+st.markdown("")
+
 # Grid de cards de framework
 selected_fw = st.session_state.get("framework_id")
 
@@ -88,8 +123,9 @@ for i, fw_id in enumerate(options):
     col = cols[i % 2]
     with col:
         is_selected = selected_fw == fw_id
-        border_color = "#4f46e5" if is_selected else "#e5e7eb"
-        bg_color = "#eef2ff" if is_selected else "#ffffff"
+        is_suggested = fw_id == suggested and not is_selected
+        border_color = "#4f46e5" if is_selected else ("#f59e0b" if is_suggested else "#e5e7eb")
+        bg_color = "#eef2ff" if is_selected else ("#fffbeb" if is_suggested else "#ffffff")
 
         st.markdown(
             f"""
@@ -100,7 +136,10 @@ for i, fw_id in enumerate(options):
                 padding: 16px 20px;
                 margin-bottom: 12px;
             ">
-                <h3 style="margin:0;color:#1f2937;">{fw['icon']} {fw['name']}</h3>
+                <h3 style="margin:0;color:#1f2937;">{fw['icon']} {fw['name']}
+                    {'<span style="font-size:0.7rem;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;margin-left:8px;vertical-align:middle;">⭐ Recomendado</span>' if is_suggested else ''}
+                    {'<span style="font-size:0.7rem;background:#ede9fe;color:#4f46e5;padding:2px 8px;border-radius:12px;margin-left:8px;vertical-align:middle;">✓ Selecionado</span>' if is_selected else ''}
+                </h3>
                 <p style="color:#6366f1;font-size:0.85rem;margin:4px 0 8px 0;">
                     {fw['dimensions']}
                 </p>
@@ -121,15 +160,18 @@ for i, fw_id in enumerate(options):
             use_container_width=True,
         ):
             st.session_state.framework_id = fw_id
-            # Limpar análise anterior ao trocar framework
             st.session_state.pop("framework_sections", None)
             st.session_state.pop("insights", None)
             st.rerun()
 
 st.divider()
+
 if st.session_state.get("framework_id"):
     fw_name = FRAMEWORK_DESCRIPTIONS[st.session_state.framework_id]["name"]
-    st.success(f"Framework selecionado: **{fw_name}**")
-    st.page_link("pages/04_builder.py", label="Próximo: Configurar Relatório →", icon="🛠️")
+    col_status, col_nav = st.columns([2, 1])
+    with col_status:
+        st.success(f"Framework selecionado: **{fw_name}**")
+    with col_nav:
+        st.page_link("pages/04_builder.py", label="Próximo: Configurar Relatório →", icon="🛠️")
 else:
     st.info("Selecione um framework para continuar.")
