@@ -1,0 +1,128 @@
+"""Página 3 — Escolha do framework analítico."""
+
+import streamlit as st
+
+from app.config.settings import SUPPORTED_FRAMEWORKS
+
+st.set_page_config(page_title="Framework — Report Generator", layout="wide")
+
+st.title("3. Escolha o Framework Analítico")
+st.markdown(
+    "O framework define a lente estratégica pela qual seus dados serão interpretados."
+)
+
+if st.session_state.get("processed_df") is None:
+    st.warning("Dados não processados. Volte para a etapa anterior.")
+    st.page_link("pages/02_processing.py", label="← Voltar para Processamento")
+    st.stop()
+
+FRAMEWORK_DESCRIPTIONS = {
+    "ooda": {
+        "name": "OODA Loop",
+        "icon": "🔄",
+        "dimensions": "Observe → Orient → Decide → Act",
+        "description": (
+            "Analisa dados em 4 fases militares adaptadas ao negócio: "
+            "observe o panorama geral, oriente o contexto comparativo, "
+            "decida com base em correlações e aja com recomendações priorizadas."
+        ),
+        "ideal_for": "Análise estratégica geral, tomada de decisão executiva",
+    },
+    "funnel": {
+        "name": "Funil de Conversão",
+        "icon": "📊",
+        "dimensions": "Topo → Meio → Fundo → Conversão → Gargalos",
+        "description": (
+            "Mapeia o fluxo de volume através de etapas sequenciais, "
+            "identificando taxas de conversão e gargalos em cada fase."
+        ),
+        "ideal_for": "Marketing, vendas, e-commerce, jornadas de usuário",
+    },
+    "performance": {
+        "name": "Diagnóstico de Performance",
+        "icon": "⚡",
+        "dimensions": "Volume → Eficiência → Qualidade",
+        "description": (
+            "Avalia quanto foi produzido (volume), com que eficiência "
+            "(relação insumo/resultado) e com que consistência (qualidade)."
+        ),
+        "ideal_for": "Operações, equipes de vendas, produção, KPIs operacionais",
+    },
+    "eda": {
+        "name": "Análise Exploratória",
+        "icon": "🔬",
+        "dimensions": "Distribuições → Correlações → Outliers",
+        "description": (
+            "Explora o dataset de forma abrangente: distribuições estatísticas, "
+            "relações entre variáveis e identificação de valores atípicos."
+        ),
+        "ideal_for": "Primeiro contato com dados novos, análise científica, data science",
+    },
+    "temporal": {
+        "name": "Comparação Temporal",
+        "icon": "📈",
+        "dimensions": "Tendência → Crescimento → Sazonalidade",
+        "description": (
+            "Analisa a evolução ao longo do tempo, calculando crescimento "
+            "período a período e identificando padrões sazonais."
+        ),
+        "ideal_for": "Séries temporais, dados financeiros, métricas com data",
+    },
+}
+
+# Grid de cards de framework
+selected_fw = st.session_state.get("framework_id")
+
+cols = st.columns(2)
+options = list(FRAMEWORK_DESCRIPTIONS.keys())
+
+for i, fw_id in enumerate(options):
+    fw = FRAMEWORK_DESCRIPTIONS[fw_id]
+    col = cols[i % 2]
+    with col:
+        is_selected = selected_fw == fw_id
+        border_color = "#4f46e5" if is_selected else "#e5e7eb"
+        bg_color = "#eef2ff" if is_selected else "#ffffff"
+
+        st.markdown(
+            f"""
+            <div style="
+                border: 2px solid {border_color};
+                background: {bg_color};
+                border-radius: 10px;
+                padding: 16px 20px;
+                margin-bottom: 12px;
+            ">
+                <h3 style="margin:0;color:#1f2937;">{fw['icon']} {fw['name']}</h3>
+                <p style="color:#6366f1;font-size:0.85rem;margin:4px 0 8px 0;">
+                    {fw['dimensions']}
+                </p>
+                <p style="color:#374151;font-size:0.92rem;margin:0 0 8px 0;">
+                    {fw['description']}
+                </p>
+                <p style="color:#6b7280;font-size:0.82rem;margin:0;">
+                    <strong>Ideal para:</strong> {fw['ideal_for']}
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            f"{'✓ Selecionado' if is_selected else 'Selecionar'} — {fw['name']}",
+            key=f"fw_btn_{fw_id}",
+            type="primary" if is_selected else "secondary",
+            use_container_width=True,
+        ):
+            st.session_state.framework_id = fw_id
+            # Limpar análise anterior ao trocar framework
+            st.session_state.pop("framework_sections", None)
+            st.session_state.pop("insights", None)
+            st.rerun()
+
+st.divider()
+if st.session_state.get("framework_id"):
+    fw_name = FRAMEWORK_DESCRIPTIONS[st.session_state.framework_id]["name"]
+    st.success(f"Framework selecionado: **{fw_name}**")
+    st.page_link("pages/04_builder.py", label="Próximo: Configurar Relatório →", icon="🛠️")
+else:
+    st.info("Selecione um framework para continuar.")

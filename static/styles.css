@@ -1,0 +1,44 @@
+/* Estilos globais do Report Generator */
+
+:root {
+    --primary: #4f46e5;
+    --primary-light: #e0e7ff;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-700: #374151;
+    --gray-900: #111827;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Cards de seção */
+.section-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+/* Insight text blocks */
+.insight-text {
+    background: var(--primary-light);
+    border-left: 4px solid var(--primary);
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 0.94rem;
+    color: var(--gray-700);
+    margin-top: 12px;
+    line-height: 1.6;
+}
+
+/* Badges de severidade */
+.badge-info { background: #e0f2fe; color: #0369a1; border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; }
+.badge-warning { background: #fef9c3; color: #92400e; border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; }
+.badge-critical { background: #fee2e2; color: #991b1b; border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; }

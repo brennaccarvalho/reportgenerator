@@ -1,0 +1,9 @@
+<h2>{{ section.title }}</h2>
+
+{% if section.chart_img_b64 %}
+<img src="data:image/png;base64,{{ section.chart_img_b64 }}" alt="{{ section.title }}" />
+{% endif %}
+
+{% if section.text %}
+<div class="insight-text">{{ section.text }}</div>
+{% endif %}
