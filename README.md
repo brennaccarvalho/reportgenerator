@@ -33,6 +33,10 @@ venv\Scripts\activate         # Windows
 pip install -r requirements.txt
 ```
 
+O `requirements.txt` tambem instala o proprio projeto em modo editavel (`-e .`).
+Isso garante que o pacote `app` seja importavel corretamente em ambientes como o
+Streamlit Cloud.
+
 ---
 
 ## Configuração do .env
@@ -154,7 +158,7 @@ pytest tests/ -v
 
 1. Faça push do repositório para o GitHub
 2. Acesse [share.streamlit.io](https://share.streamlit.io)
-3. Conecte o repositório, aponte para `app/main.py`
+3. Conecte o repositório e aponte para `app/main.py`
 4. Adicione as variáveis de ambiente necessárias em **Settings → Secrets**
 5. Use o arquivo `DATASET_TESTE.csv` para testar o upload
 

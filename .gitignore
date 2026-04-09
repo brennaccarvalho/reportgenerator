@@ -44,3 +44,6 @@ htmlcov/
 
 # Logs
 *.log
+
+# Build temporarios locais
+.tmp/
