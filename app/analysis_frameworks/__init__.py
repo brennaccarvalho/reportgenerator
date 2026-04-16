@@ -5,6 +5,7 @@ from app.analysis_frameworks.funnel_framework import FunnelFramework
 from app.analysis_frameworks.performance_framework import PerformanceFramework
 from app.analysis_frameworks.eda_framework import EdaFramework
 from app.analysis_frameworks.temporal_framework import TemporalFramework
+from app.analysis_frameworks.meridian_framework import MeridianFramework, MERIDIAN_AVAILABLE
 
 FRAMEWORK_MAP = {
     "ooda": OodaFramework,

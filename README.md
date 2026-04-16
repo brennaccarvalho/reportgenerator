@@ -120,6 +120,59 @@ Analisa evolução ao longo do tempo. Requer coluna de data no dataset.
 
 ---
 
+## Media Mix Modeling (Meridian)
+
+### O que é e quando usar
+
+O **Google Meridian** é uma biblioteca de Media Mix Modeling (MMM) que usa inferência Bayesiana (MCMC) para quantificar o impacto de cada canal de marketing (TV, digital, rádio, etc.) nas vendas ou conversões. Use quando precisar:
+
+- Medir o ROI real por canal de mídia
+- Entender a contribuição de cada canal para o KPI principal
+- Otimizar a distribuição de budget entre canais
+
+### Pré-requisitos de hardware
+
+- Python 3.10+
+- TensorFlow 2.16+
+- GPU recomendada (NVIDIA com CUDA) para treino em tempo razoável
+- Sem GPU: treino pode levar horas; CPU é suportado mas lento
+
+### Instalação das dependências opcionais
+
+```bash
+pip install google-meridian[schema]>=1.3.0 tensorflow>=2.16.0 tensorflow-probability>=0.24.0
+```
+
+### Estrutura de CSV esperada
+
+```
+data,vendas,gasto_tv,gasto_digital,custo_radio,impressoes_tv,alcance_digital
+2023-01-01,15420,12000,8500,3200,450000,180000
+2023-01-08,16800,11500,9000,3000,480000,195000
+...
+```
+
+Colunas:
+
+- `data` — data da semana (formato `YYYY-MM-DD`; granularidade semanal recomendada)
+- `vendas` — KPI principal (receita, conversões, etc.)
+- `gasto_tv`, `gasto_digital`, `custo_radio` — investimento por canal de mídia
+- `impressoes_tv`, `alcance_digital` — impressões/alcance (opcional)
+- Variáveis de controle como `temperatura` ou `feriado` são opcionais
+
+Recomendações de volume de dados:
+
+- Mínimo de 52 semanas (1 ano)
+- Ideal: 104+ semanas (2 anos)
+- Pelo menos 3 canais de mídia
+
+### Documentação oficial
+
+- Documentação: https://google.github.io/meridian
+- PyPI: https://pypi.org/project/google-meridian/
+
+---
+
 ## Estrutura de pastas
 
 ```

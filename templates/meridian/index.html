@@ -1,0 +1,606 @@
+{% extends "layout.html" %}
+{% block title %}Media Mix Model (Meridian){% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">📡 Media Mix Model</h1>
+        <p class="text-muted mb-0">Quantifique o impacto de cada canal de marketing nas suas vendas</p>
+    </div>
+    {% if not meridian_available %}
+    <span class="badge bg-danger fs-6">Meridian não instalado</span>
+    {% endif %}
+</div>
+
+{% if not meridian_available %}
+<div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Meridian não está instalado.</strong><br>
+    Execute: <code>pip install google-meridian[schema] tensorflow tensorflow-probability</code>
+</div>
+{% else %}
+
+<!-- Barra de progresso de treino (oculta por padrão) -->
+<div id="trainingProgress" class="card mb-4" style="display:none !important;">
+    <div class="card-body">
+        <h6 class="card-title">
+            <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+            Treinando modelo...
+        </h6>
+        <div class="progress mb-2">
+            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                 style="width: 0%"></div>
+        </div>
+        <small id="progressMessage" class="text-muted">Aguardando...</small>
+    </div>
+</div>
+
+<!-- Navegação em Pills (4 etapas) -->
+<ul class="nav nav-pills mb-4" id="mmm-tabs">
+    <li class="nav-item">
+        <button class="nav-link active" data-step="1" onclick="showStep(1)">
+            <i class="bi bi-columns-gap me-1"></i>1. Mapeamento
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-step="2" onclick="showStep(2)">
+            <i class="bi bi-sliders me-1"></i>2. Configuração
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-step="3" onclick="showStep(3)">
+            <i class="bi bi-activity me-1"></i>3. Diagnósticos
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-step="4" onclick="showStep(4)">
+            <i class="bi bi-bar-chart-line me-1"></i>4. Resultados
+        </button>
+    </li>
+</ul>
+
+<!-- ETAPA 1: Mapeamento de Colunas -->
+<div id="step-1" class="step-content">
+    <div class="card">
+        <div class="card-header card-header-primary">
+            <h5 class="mb-0 text-white"><i class="bi bi-columns-gap me-2"></i>Mapeamento de Colunas</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Identifique quais colunas do seu dataset correspondem a cada elemento do MMM.
+            </div>
+
+            <!-- Detecção automática -->
+            <div id="detectionResult" class="mb-3">
+                <button class="btn btn-outline-primary" onclick="detectColumns(event)">
+                    <i class="bi bi-search me-1"></i>Detectar Colunas Automaticamente
+                </button>
+            </div>
+
+            <div id="detectionOutput" style="display:none">
+                <!-- Preenchido via JavaScript -->
+            </div>
+
+            <hr>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">KPI (resultado a modelar) <span class="text-danger">*</span></label>
+                        <select class="form-select" id="kpiCol" required>
+                            <option value="">Selecione uma coluna...</option>
+                        </select>
+                        <div class="form-text">Ex: vendas, receita, conversões</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Coluna de Data</label>
+                        <select class="form-select" id="dateCol">
+                            <option value="">(nenhuma)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Canais de Investimento (spend) <span class="text-danger">*</span></label>
+                        <div id="spendColsContainer"></div>
+                        <div class="form-text">Selecione todas as colunas de gasto por canal</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Impressões por Canal (opcional)</label>
+                        <div id="impressionColsContainer"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Variáveis de Controle (opcional)</label>
+                        <div id="controlColsContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="validationResult" class="mb-3" style="display:none"></div>
+
+            <button class="btn btn-primary" onclick="validateMapping()">
+                <i class="bi bi-check-circle me-1"></i>Validar Dados
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ETAPA 2: Configuração do Modelo -->
+<div id="step-2" class="step-content" style="display:none">
+    <div class="card">
+        <div class="card-header card-header-primary">
+            <h5 class="mb-0 text-white"><i class="bi bi-sliders me-2"></i>Configuração do Modelo</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="bi bi-clock me-2"></i>
+                <strong>Atenção:</strong> O treino pode levar de 10 a 60 minutos dependendo do hardware. Use GPU para melhores resultados.
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">ROI Prior — Média (μ)</label>
+                        <input type="range" class="form-range" id="roiMu" min="-1.0" max="2.0" step="0.1" value="0.2"
+                               oninput="document.getElementById('roiMuVal').textContent = this.value">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">Valor atual: <strong id="roiMuVal">0.2</strong></small>
+                        </div>
+                        <div class="form-text">Retorno esperado por real investido. 0.2 = R$0,20 por R$1,00.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Número de Cadeias MCMC</label>
+                        <input type="number" class="form-control" id="nChains" min="1" max="16" value="4">
+                        <div class="form-text">Mais cadeias = mais confiável, mais lento</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Burnin</label>
+                        <input type="number" class="form-control" id="nBurnin" min="100" max="5000" value="500">
+                        <div class="form-text">Iterações de aquecimento (descartadas)</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">ROI Prior — Desvio (σ)</label>
+                        <input type="range" class="form-range" id="roiSigma" min="0.1" max="2.0" step="0.1" value="0.9"
+                               oninput="document.getElementById('roiSigmaVal').textContent = this.value">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">Valor atual: <strong id="roiSigmaVal">0.9</strong></small>
+                        </div>
+                        <div class="form-text">Incerteza no prior. Valores maiores = distribuição mais ampla.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Adaptação</label>
+                        <input type="number" class="form-control" id="nAdapt" min="100" max="5000" value="1000">
+                        <div class="form-text">Iterações de adaptação do passo</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amostras (keep)</label>
+                        <input type="number" class="form-control" id="nKeep" min="100" max="5000" value="500">
+                        <div class="form-text">Amostras efetivas a manter por cadeia</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg" onclick="startTraining()">
+                <i class="bi bi-play-circle me-1"></i>Iniciar Treino
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ETAPA 3: Diagnósticos -->
+<div id="step-3" class="step-content" style="display:none">
+    <div class="card">
+        <div class="card-header card-header-primary">
+            <h5 class="mb-0 text-white"><i class="bi bi-activity me-2"></i>Diagnóstico de Convergência</h5>
+        </div>
+        <div class="card-body">
+            <div id="diagnosticsContent">
+                <p class="text-muted">Aguardando resultados do treino...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ETAPA 4: Resultados & Otimização -->
+<div id="step-4" class="step-content" style="display:none">
+    <div id="resultsContent">
+        <p class="text-muted">Aguardando resultados...</p>
+    </div>
+
+    <!-- Seção de otimização (aparece após carregar resultados) -->
+    <div id="optimizationSection" class="card mt-4" style="display:none">
+        <div class="card-header card-header-primary">
+            <h5 class="mb-0 text-white"><i class="bi bi-sliders2 me-2"></i>Otimização de Budget</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Budget Total Disponível (R$)</label>
+                <input type="number" class="form-control" id="totalBudget" min="0" step="1000" value="100000">
+            </div>
+            <div id="channelConstraints" class="mb-3"></div>
+            <button class="btn btn-success" onclick="runOptimization(event)">
+                <i class="bi bi-graph-up me-1"></i>Otimizar Budget
+            </button>
+        </div>
+    </div>
+
+    <div id="optimizationResult" class="mt-3" style="display:none"></div>
+
+    <!-- Exportação -->
+    <div id="exportSection" class="card mt-4" style="display:none">
+        <div class="card-body">
+            <h6>Exportar Relatório</h6>
+            <a id="downloadReportBtn" href="#" class="btn btn-outline-primary" target="_blank">
+                <i class="bi bi-download me-1"></i>Baixar Relatório HTML
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+const state = {
+    jobId: null,
+    columnMapping: {},
+    pollingInterval: null,
+    results: null,
+};
+
+function showStep(n) {
+    document.querySelectorAll('.step-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('[data-step]').forEach(el => el.classList.remove('active'));
+    document.getElementById('step-' + n).style.display = 'block';
+    document.querySelector('[data-step="' + n + '"]').classList.add('active');
+}
+
+async function detectColumns(evt) {
+    const btn = evt ? evt.target : null;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Detectando...'; }
+
+    try {
+        const res = await fetch('/meridian/detect-columns', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+        const data = await res.json();
+
+        if (data.error) {
+            showAlert('danger', data.error);
+            return;
+        }
+
+        populateColumnSelects(data);
+
+        const output = document.getElementById('detectionOutput');
+        output.style.display = 'block';
+
+        const detected = data.detected;
+        let html = '<div class="alert alert-success"><strong>Detecção automática:</strong><br>';
+        if (detected.kpi?.column) html += `KPI: <code>${detected.kpi.column}</code> (confiança: ${(detected.kpi.confidence*100).toFixed(0)}%)<br>`;
+        if (detected.media_spend?.columns?.length) html += `Spend: <code>${detected.media_spend.columns.join(', ')}</code><br>`;
+        html += `<small>${detected.message || ''}</small></div>`;
+        output.innerHTML = html;
+
+    } catch(e) {
+        showAlert('danger', 'Erro ao detectar colunas: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-search me-1"></i>Detectar Colunas Automaticamente'; }
+    }
+}
+
+function populateColumnSelects(data) {
+    const cols = data.columns || [];
+    const numCols = data.numeric_columns || [];
+    const detected = data.detected || {};
+
+    // KPI
+    const kpiSel = document.getElementById('kpiCol');
+    kpiSel.innerHTML = '<option value="">Selecione...</option>';
+    numCols.forEach(c => {
+        const opt = new Option(c, c, false, c === detected.kpi?.column);
+        kpiSel.appendChild(opt);
+    });
+
+    // Date
+    const dateSel = document.getElementById('dateCol');
+    dateSel.innerHTML = '<option value="">(nenhuma)</option>';
+    cols.forEach(c => {
+        const opt = new Option(c, c, false, c === detected.date_col?.column);
+        dateSel.appendChild(opt);
+    });
+
+    buildCheckboxGroup('spendColsContainer',      'spend-col',      'spend', numCols, detected.media_spend?.columns);
+    buildCheckboxGroup('impressionColsContainer', 'impression-col', 'imp',   numCols, detected.media_impressions?.columns);
+    buildCheckboxGroup('controlColsContainer',    'control-col',    'ctrl',  numCols, []);
+}
+
+function buildCheckboxGroup(containerId, cssClass, idPrefix, cols, selected) {
+    const sel = selected || [];
+    document.getElementById(containerId).innerHTML = cols.map(c =>
+        `<div class="form-check"><input class="form-check-input ${cssClass}" type="checkbox" value="${c}" id="${idPrefix}_${c}" ${sel.includes(c) ? 'checked' : ''}><label class="form-check-label" for="${idPrefix}_${c}">${c}</label></div>`
+    ).join('');
+}
+
+function collectMapping() {
+    return {
+        kpi: document.getElementById('kpiCol').value,
+        date_col: document.getElementById('dateCol').value || null,
+        media_spend: [...document.querySelectorAll('.spend-col:checked')].map(el => el.value),
+        media_impressions: [...document.querySelectorAll('.impression-col:checked')].map(el => el.value),
+        controls: [...document.querySelectorAll('.control-col:checked')].map(el => el.value),
+    };
+}
+
+async function validateMapping() {
+    const mapping = collectMapping();
+    if (!mapping.kpi) { showAlert('warning', 'Selecione a coluna KPI.'); return; }
+    if (!mapping.media_spend.length) { showAlert('warning', 'Selecione pelo menos um canal de investimento.'); return; }
+
+    state.columnMapping = mapping;
+
+    const res = await fetch('/meridian/validate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({column_mapping: mapping})
+    });
+    const data = await res.json();
+
+    const validDiv = document.getElementById('validationResult');
+    validDiv.style.display = 'block';
+
+    let html = '';
+    (data.errors || []).forEach(e => html += `<div class="alert alert-danger py-2"><i class="bi bi-x-circle me-1"></i>${e}</div>`);
+    (data.warnings || []).forEach(w => html += `<div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle me-1"></i>${w}</div>`);
+
+    if (data.valid) {
+        html += '<div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>Dados válidos! Avance para a etapa de Configuração.</div>';
+        setTimeout(() => showStep(2), 1000);
+    }
+
+    validDiv.innerHTML = html;
+}
+
+async function startTraining() {
+    const mapping = state.columnMapping;
+    if (!mapping.kpi) {
+        showAlert('warning', 'Valide os dados na Etapa 1 antes de treinar.');
+        return;
+    }
+
+    const payload = {
+        column_mapping: mapping,
+        roi_mu: parseFloat(document.getElementById('roiMu').value),
+        roi_sigma: parseFloat(document.getElementById('roiSigma').value),
+        n_chains: parseInt(document.getElementById('nChains').value),
+        n_adapt: parseInt(document.getElementById('nAdapt').value),
+        n_burnin: parseInt(document.getElementById('nBurnin').value),
+        n_keep: parseInt(document.getElementById('nKeep').value),
+    };
+
+    try {
+        const res = await fetch('/meridian/train', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.error) { showAlert('danger', data.error); return; }
+
+        state.jobId = data.job_id;
+        document.getElementById('trainingProgress').style.removeProperty('display');
+        startPolling();
+
+    } catch(e) {
+        showAlert('danger', 'Erro ao iniciar treino: ' + e.message);
+    }
+}
+
+function startPolling() {
+    if (state.pollingInterval) clearInterval(state.pollingInterval);
+    state.pollingInterval = setInterval(pollStatus, 10000);
+    pollStatus();
+}
+
+async function pollStatus() {
+    if (!state.jobId) return;
+
+    try {
+        const res = await fetch('/meridian/status/' + state.jobId);
+        const data = await res.json();
+
+        const bar = document.getElementById('progressBar');
+        const pct = data.progress + '%';
+        if (bar.style.width !== pct) { bar.style.width = pct; bar.textContent = pct; }
+        const msgEl = document.getElementById('progressMessage');
+        if (msgEl.textContent !== data.message) msgEl.textContent = data.message;
+
+        if (data.status === 'done') {
+            clearInterval(state.pollingInterval);
+            document.getElementById('trainingProgress').style.display = 'none';
+            loadResults();
+            showStep(3);
+        } else if (data.status === 'error') {
+            clearInterval(state.pollingInterval);
+            document.getElementById('trainingProgress').style.display = 'none';
+            showAlert('danger', 'Erro no treino: ' + data.message);
+        }
+    } catch(e) {
+        console.error('Erro no polling:', e);
+    }
+}
+
+async function loadResults() {
+    const res = await fetch('/meridian/results/' + state.jobId);
+    const data = await res.json();
+
+    if (!data.success) return;
+
+    state.results = data;
+
+    // Preenche diagnósticos (Etapa 3)
+    const health = data.health || {};
+    const rhat = health.rhat_max || 0;
+    let rhatColor = rhat < 1.05 ? 'success' : rhat < 1.15 ? 'warning' : 'danger';
+    let rhatIcon = rhat < 1.05 ? '🟢' : rhat < 1.15 ? '🟡' : '🔴';
+
+    document.getElementById('diagnosticsContent').innerHTML = `
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-label">R-hat Máximo</div>
+                    <div class="stat-num text-${rhatColor}">${rhat.toFixed(4)}</div>
+                    <div class="stat-label">${rhatIcon} ${health.rhat_summary || ''}</div>
+                </div>
+            </div>
+        </div>
+        <div class="alert alert-${rhatColor}">
+            <strong>${health.convergiu ? 'Convergência adequada' : 'Verificar convergência'}</strong><br>
+            ${health.rhat_summary || ''}
+        </div>
+        <button class="btn btn-primary" onclick="showStep(4); loadCharts();">
+            Ver Resultados →
+        </button>
+    `;
+
+    // Exportação
+    document.getElementById('downloadReportBtn').href = '/meridian/report/' + state.jobId + '?download=true';
+    document.getElementById('exportSection').style.display = 'block';
+}
+
+async function loadCharts() {
+    if (!state.results) return;
+
+    const results = state.results.results || {};
+    const rois = results.roi_by_channel || {};
+    const contribs = results.contribution_by_channel || {};
+
+    const cardsHtml = '<div class="row mb-4">' + Object.entries(rois).map(([canal, roi]) => `
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-label">${canal}</div>
+                    <div class="stat-num">R$ ${roi.mean?.toFixed(2) || '—'}</div>
+                    <div class="stat-label text-muted">IC: [${roi.lower?.toFixed(2) || '—'}, ${roi.upper?.toFixed(2) || '—'}]</div>
+                </div>
+            </div>`).join('') + '</div>';
+
+    // Gráfico de contribuição (Plotly)
+    const channels = Object.keys(contribs);
+    const values = Object.values(contribs);
+    const baseline = results.baseline_contribution || 0;
+    channels.push('Baseline');
+    values.push(baseline);
+
+    document.getElementById('resultsContent').innerHTML = `
+        ${cardsHtml}
+        <div class="card mb-4">
+            <div class="card-header card-header-primary">
+                <h6 class="mb-0 text-white">Contribuição por Canal</h6>
+            </div>
+            <div class="card-body">
+                <div id="contributionChart"></div>
+            </div>
+        </div>
+    `;
+
+    Plotly.newPlot('contributionChart', [{
+        type: 'pie',
+        labels: channels,
+        values: values,
+        hole: 0.4,
+        marker: {colors: ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#6b7280']}
+    }], {
+        showlegend: true,
+        margin: {t: 20, b: 20},
+        paper_bgcolor: 'rgba(0,0,0,0)',
+    }, {responsive: true});
+
+    // Otimização
+    document.getElementById('optimizationSection').style.display = 'block';
+    buildChannelSliders(Object.keys(rois));
+}
+
+function buildChannelSliders(channels) {
+    document.getElementById('channelConstraints').innerHTML = '<div class="row">' + channels.map(canal => `
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold">${canal}</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Min R$</span>
+                    <input type="number" class="form-control constraint-min" data-channel="${canal}" value="0" min="0">
+                    <span class="input-group-text">Max R$</span>
+                    <input type="number" class="form-control constraint-max" data-channel="${canal}" value="999999" min="0">
+                </div>
+            </div>`).join('') + '</div>';
+}
+
+async function runOptimization(evt) {
+    const totalBudget = parseFloat(document.getElementById('totalBudget').value);
+    const maxByChannel = Object.fromEntries(
+        [...document.querySelectorAll('.constraint-max')].map(el => [el.dataset.channel, parseFloat(el.value)])
+    );
+    const constraints = {};
+    document.querySelectorAll('.constraint-min').forEach(el => {
+        const canal = el.dataset.channel;
+        constraints[canal] = {min: parseFloat(el.value), max: maxByChannel[canal]};
+    });
+
+    const btn = evt.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Otimizando...';
+
+    try {
+        const res = await fetch('/meridian/optimize', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({job_id: state.jobId, total_budget: totalBudget, constraints})
+        });
+        const data = await res.json();
+
+        if (data.error) { showAlert('danger', data.error); return; }
+
+        const opt = data.optimization;
+        let tableHtml = `<div class="alert alert-success">Lift esperado: <strong>${((opt.expected_kpi_lift||0)*100).toFixed(1)}%</strong></div>`;
+        tableHtml += '<table class="table table-sm"><thead><tr><th>Canal</th><th>Atual (R$)</th><th>Otimizado (R$)</th><th>Delta</th></tr></thead><tbody>';
+        Object.keys(opt.current_budget || {}).forEach(c => {
+            const delta = opt.budget_delta?.[c] || 0;
+            const sign = delta >= 0 ? '+' : '';
+            const cls = delta >= 0 ? 'text-success' : 'text-danger';
+            tableHtml += `<tr><td>${c}</td><td>${(opt.current_budget[c]||0).toFixed(0)}</td><td>${(opt.optimized_budget[c]||0).toFixed(0)}</td><td class="${cls}">${sign}${delta.toFixed(0)}</td></tr>`;
+        });
+        tableHtml += '</tbody></table>';
+
+        const optResult = document.getElementById('optimizationResult');
+        optResult.style.display = 'block';
+        optResult.innerHTML = tableHtml;
+
+    } catch(e) {
+        showAlert('danger', 'Erro na otimização: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-graph-up me-1"></i>Otimizar Budget';
+    }
+}
+
+function showAlert(type, message) {
+    const div = document.createElement('div');
+    div.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    div.style.zIndex = '9999';
+    div.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 5000);
+}
+
+document.addEventListener('DOMContentLoaded', () => detectColumns());
+</script>
+{% endblock %}

@@ -80,6 +80,23 @@ FRAMEWORK_DESCRIPTIONS = {
         ),
         "ideal_for": "Séries temporais, dados financeiros, métricas com data",
     },
+    "meridian": {
+        "name": "Media Mix Model (Meridian)",
+        "icon": "📡",
+        "dimensions": "Investimento → ROI → Otimização de Budget",
+        "description": (
+            "Quantifica o impacto real de cada canal de marketing nas vendas usando inferência Bayesiana (MCMC). "
+            "Ideal para analisar ROI por canal e otimizar distribuição de verba."
+        ),
+        "ideal_for": "Análise de mix de mídia, atribuição de vendas a canais de marketing, otimização de budget.",
+        "note": "⚠️ Requer TensorFlow e GPU (recomendado). Tempo de treino: 10-60 min.",
+    },
+}
+
+
+# Frameworks with a custom next-page destination (others go to 04_builder.py)
+_NEXT_PAGE: dict[str, tuple[str, str, str]] = {
+    "meridian": ("pages/07_meridian.py", "Iniciar análise MMM →", "📡"),
 }
 
 
@@ -127,6 +144,10 @@ for i, fw_id in enumerate(options):
         border_color = "#4f46e5" if is_selected else ("#f59e0b" if is_suggested else "#e5e7eb")
         bg_color = "#eef2ff" if is_selected else ("#fffbeb" if is_suggested else "#ffffff")
 
+        note_html = (
+            f'<p style="color:#92400e;font-size:0.82rem;margin:6px 0 0 0;background:#fef3c7;padding:4px 8px;border-radius:6px;">{fw["note"]}</p>'
+            if fw.get("note") else ""
+        )
         st.markdown(
             f"""
             <div style="
@@ -149,6 +170,7 @@ for i, fw_id in enumerate(options):
                 <p style="color:#6b7280;font-size:0.82rem;margin:0;">
                     <strong>Ideal para:</strong> {fw['ideal_for']}
                 </p>
+                {note_html}
             </div>
             """,
             unsafe_allow_html=True,
@@ -172,6 +194,7 @@ if st.session_state.get("framework_id"):
     with col_status:
         st.success(f"Framework selecionado: **{fw_name}**")
     with col_nav:
-        st.page_link("pages/04_builder.py", label="Próximo: Configurar Relatório →", icon="🛠️")
+        next_page = _NEXT_PAGE.get(st.session_state.framework_id, ("pages/04_builder.py", "Próximo: Configurar Relatório →", "🛠️"))
+        st.page_link(next_page[0], label=next_page[1], icon=next_page[2])
 else:
     st.info("Selecione um framework para continuar.")
