@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Report Generator{% endblock %}</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Variáveis de tema ────────────────────────────────────── */
+    :root {
+      --primary:       #4f46e5;
+      --primary-dark:  #3730a3;
+      --primary-light: #eef2ff;
+      --success:       #10b981;
+      --warning-col:   #f59e0b;
+      --danger-col:    #ef4444;
+      --text-dark:     #1f2937;
+      --text-muted:    #6b7280;
+      --bg:            #f9fafb;
+      --border:        #e5e7eb;
+      --white:         #ffffff;
+    }
+
+    /* ── Base ─────────────────────────────────────────────────── */
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text-dark);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    /* ── Navbar ───────────────────────────────────────────────── */
+    .topnav {
+      background: var(--primary);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .brand {
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: white;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand:hover { color: rgba(255,255,255,0.9); }
+    .nav-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: background 0.15s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.25); color: white; }
+    .nav-btn-accent {
+      background: white;
+      color: var(--primary);
+      border-color: white;
+    }
+    .nav-btn-accent:hover { background: #f0f0ff; color: var(--primary); }
+
+    /* ── Layout principal ─────────────────────────────────────── */
+    .page-layout {
+      display: flex;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────────── */
+    .sidebar {
+      width: 240px;
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0.875rem;
+      flex-shrink: 0;
+    }
+    .sidebar-section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      padding: 0 0.375rem;
+      margin-bottom: 0.5rem;
+    }
+    .step-link {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.45rem 0.6rem;
+      border-radius: 0.45rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      margin-bottom: 0.1rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .step-link:hover { background: var(--primary-light); color: var(--primary); }
+    .step-link.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+    .step-link.done   { color: var(--text-dark); }
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: var(--border);
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .step-link.active .step-num { background: var(--primary); color: white; }
+    .step-link.done   .step-num { background: var(--success); color: white; }
+    .dataset-badge {
+      background: var(--primary-light);
+      border-radius: 0.5rem;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .dataset-badge .ds-name { font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
+    .dataset-badge .ds-meta { color: var(--text-muted); font-size: 0.75rem; }
+
+    /* ── Conteúdo principal ───────────────────────────────────── */
+    .main-content { flex: 1; padding: 2rem; overflow-x: hidden; }
+
+    /* ── Cards ────────────────────────────────────────────────── */
+    .card { border: 1px solid var(--border); border-radius: 0.75rem; }
+    .card-header-primary {
+      background: var(--primary);
+      color: white;
+      border-radius: 0.75rem 0.75rem 0 0;
+      padding: 0.875rem 1.25rem;
+      font-weight: 600;
+    }
+
+    /* ── Botões ───────────────────────────────────────────────── */
+    .btn-primary { background: var(--primary); border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn-outline-primary { color: var(--primary); border-color: var(--primary); }
+    .btn-outline-primary:hover { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* ── Upload zone ──────────────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 1rem;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .upload-icon { font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem; }
+
+    /* ── Framework cards ──────────────────────────────────────── */
+    .framework-card {
+      cursor: pointer;
+      border: 2px solid var(--border) !important;
+      transition: all 0.2s;
+      border-radius: 0.75rem;
+    }
+    .framework-card:hover {
+      border-color: var(--primary) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(79,70,229,0.15);
+    }
+    .framework-card.selected {
+      border-color: var(--primary) !important;
+      background: var(--primary-light);
+    }
+
+    /* ── Insights ─────────────────────────────────────────────── */
+    .insight-card {
+      padding: 0.75rem 1rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      margin-bottom: 0.6rem;
+      background: white;
+      border: 1px solid var(--border);
+    }
+    .insight-card.info     { border-left: 4px solid #3b82f6; }
+    .insight-card.warning  { border-left: 4px solid var(--warning-col); }
+    .insight-card.critical { border-left: 4px solid var(--danger-col); }
+    .insight-badge.info     { background: #dbeafe; color: #1d4ed8; }
+    .insight-badge.warning  { background: #fef3c7; color: #92400e; }
+    .insight-badge.critical { background: #fee2e2; color: #b91c1c; }
+
+    /* ── Stat cards ───────────────────────────────────────────── */
+    .stat-card {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+    }
+    .stat-num { font-size: 2.25rem; font-weight: 700; color: var(--primary); line-height: 1; }
+
+    /* ── Section preview ──────────────────────────────────────── */
+    .report-section {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+    }
+    .report-section h3 {
+      color: var(--primary);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .section-text { color: #4b5563; line-height: 1.65; }
+
+    /* ── Page header ──────────────────────────────────────────── */
+    .page-header { margin-bottom: 1.5rem; }
+    .page-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
+    .page-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem; }
+
+    /* ── Table ────────────────────────────────────────────────── */
+    .table th { font-weight: 600; font-size: 0.82rem; text-transform: uppercase;
+                letter-spacing: 0.04em; color: var(--text-muted); }
+    .table-hover tbody tr:hover { background: var(--primary-light); }
+  </style>
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <!-- ── Top Navbar ────────────────────────────────────────────── -->
+  <nav class="topnav">
+    <a href="/" class="brand">
+      <i class="bi bi-bar-chart-fill"></i>
+      Report Generator
+    </a>
+    <div class="d-flex gap-2">
+      <a href="/reports" class="nav-btn">
+        <i class="bi bi-collection"></i> Relatórios
+      </a>
+      <a href="/upload" class="nav-btn nav-btn-accent">
+        <i class="bi bi-plus-lg"></i> Novo
+      </a>
+    </div>
+  </nav>
+
+  <div class="page-layout">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-section-label">Fluxo de Trabalho</div>
+
+      {% set steps = [
+        (1, 'Upload de Dados',  'upload',     'bi-upload',      '/upload'),
+        (2, 'Processamento',    'processing', 'bi-gear',        '#'),
+        (3, 'Framework',        'framework',  'bi-layers',      '#'),
+        (4, 'Builder',          'builder',    'bi-sliders',     '#'),
+        (5, 'Preview',          'preview',    'bi-eye',         '/preview'),
+        (6, 'Publicados',       'reports',    'bi-collection',  '/reports'),
+      ] %}
+
+      {% for num, label, step_id, icon, href in steps %}
+        {% set is_active = (current_step == step_id) %}
+        {% set is_done   = (current_step_num is defined and num < current_step_num) %}
+        <a href="{{ href }}"
+           class="step-link {% if is_active %}active{% elif is_done %}done{% endif %}">
+          <span class="step-num">
+            {% if is_done %}
+              <i class="bi bi-check"></i>
+            {% else %}
+              {{ num }}
+            {% endif %}
+          </span>
+          <i class="{{ icon }}"></i>
+          {{ label }}
+        </a>
+      {% endfor %}
+
+      {% if dataset_info %}
+        <hr class="my-3">
+        <div class="sidebar-section-label">Dataset Ativo</div>
+        <div class="dataset-badge">
+          <div class="ds-name">{{ dataset_info.name }}</div>
+          <div class="ds-meta">
+            {{ dataset_info.n_rows }} linhas &bull; {{ dataset_info.n_cols }} colunas
+          </div>
+          {% if dataset_info.framework %}
+            <span class="badge mt-1" style="background:var(--primary);color:white">
+              {{ dataset_info.framework }}
+            </span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </aside>
+
+    <!-- ── Main Content ──────────────────────────────────────────── -->
+    <main class="main-content">
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show mb-3" role="alert">
+              <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

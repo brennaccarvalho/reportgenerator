@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block title %}{{ report.name }} — Report Generator{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1 class="page-title">{{ report.name }}</h1>
+    <p class="page-subtitle">
+      <span class="badge rounded-pill" style="background:var(--primary-light);color:var(--primary)">
+        {{ report.framework }}
+      </span>
+      &nbsp; {{ report.source_name or '—' }} &bull;
+      {{ report.n_rows }} linhas, {{ report.n_cols }} colunas &bull;
+      {{ report.created_at.strftime('%d/%m/%Y %H:%M') }}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/reports/{{ report.id }}/download"
+       class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-download me-1"></i> Download HTML
+    </a>
+    <a href="/reports" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+</div>
+
+{% if has_file %}
+  <!-- Relatório renderizado em iframe para isolamento de estilos -->
+  <div class="card" style="height:80vh">
+    <div class="card-body p-0" style="height:100%">
+      <iframe src="/reports/{{ report.id }}/raw"
+              style="width:100%;height:100%;border:none;border-radius:0.75rem"
+              title="{{ report.name }}">
+      </iframe>
+    </div>
+  </div>
+{% else %}
+  <div class="card">
+    <div class="card-body text-center py-5 text-muted">
+      <i class="bi bi-file-earmark-x fs-1 d-block mb-2"></i>
+      <p>Arquivo do relatório não encontrado em disco.</p>
+      <p class="small">O banco de dados tem o registro, mas o HTML pode ter sido removido manualmente.</p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

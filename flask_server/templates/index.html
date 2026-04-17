@@ -1,0 +1,127 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard — Report Generator{% endblock %}
+
+{% block content %}
+<!-- ── Cabeçalho ─────────────────────────────────────────────── -->
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Bem-vindo ao Report Generator — transforme dados em relatórios analíticos.</p>
+  </div>
+  <a href="/upload" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i> Novo Relatório
+  </a>
+</div>
+
+<!-- ── Cards de estatísticas ────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small fw-semibold text-uppercase">Relatórios Publicados</span>
+        <i class="bi bi-file-earmark-bar-graph text-primary fs-4"></i>
+      </div>
+      <div class="stat-num">{{ total_reports }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small fw-semibold text-uppercase">Datasets Importados</span>
+        <i class="bi bi-table text-primary fs-4"></i>
+      </div>
+      <div class="stat-num">{{ total_datasets }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small fw-semibold text-uppercase">Frameworks Disponíveis</span>
+        <i class="bi bi-layers text-primary fs-4"></i>
+      </div>
+      <div class="stat-num">5</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Fluxo de trabalho ─────────────────────────────────────── -->
+<div class="card mb-4">
+  <div class="card-header-primary">
+    <i class="bi bi-arrow-right-circle me-2"></i>Como funciona
+  </div>
+  <div class="card-body py-3">
+    <div class="row g-0 text-center">
+      {% for icon, label, desc in [
+        ('bi-upload',       'Upload',      'CSV ou XLSX'),
+        ('bi-gear',         'Limpeza',     'Automática'),
+        ('bi-layers',       'Framework',   '5 opções'),
+        ('bi-sliders',      'Builder',     'Selecione colunas'),
+        ('bi-eye',          'Preview',     'Visualize'),
+        ('bi-collection',   'Publique',    'Salvo no DB'),
+      ] %}
+      <div class="col">
+        <i class="bi {{ icon }} fs-3 text-primary"></i>
+        <div class="fw-600 mt-1 small" style="font-weight:600">{{ label }}</div>
+        <div class="text-muted" style="font-size:.75rem">{{ desc }}</div>
+      </div>
+      {% if not loop.last %}
+        <div class="col-auto d-flex align-items-center px-0">
+          <i class="bi bi-chevron-right text-muted"></i>
+        </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Relatórios recentes ───────────────────────────────────── -->
+<div class="card">
+  <div class="card-header-primary d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-clock-history me-2"></i>Relatórios Recentes</span>
+    <a href="/reports" class="btn btn-sm btn-light">Ver todos</a>
+  </div>
+  <div class="card-body p-0">
+    {% if recent_reports %}
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Nome</th>
+            <th>Framework</th>
+            <th>Dataset</th>
+            <th>Criado em</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recent_reports %}
+          <tr>
+            <td class="ps-3 fw-500" style="font-weight:500">{{ r.name }}</td>
+            <td>
+              <span class="badge rounded-pill" style="background:var(--primary-light);color:var(--primary)">
+                {{ r.framework }}
+              </span>
+            </td>
+            <td class="text-muted small">{{ r.source_name or '—' }}</td>
+            <td class="text-muted small">{{ r.created_at.strftime('%d/%m/%Y') }}</td>
+            <td class="text-end pe-3">
+              <a href="/reports/{{ r.id }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        Nenhum relatório publicado ainda.
+        <br>
+        <a href="/upload" class="btn btn-primary mt-3">
+          <i class="bi bi-plus-lg me-1"></i> Criar primeiro relatório
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

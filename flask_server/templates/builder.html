@@ -1,0 +1,141 @@
+{% extends "layout.html" %}
+{% block title %}Builder — Report Generator{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><span class="text-muted fw-normal">Passo 4 /</span> Configurar Relatório</h1>
+  <p class="page-subtitle">
+    Framework: <strong>{{ framework_id | upper }}</strong> &bull;
+    Selecione as colunas que entrarão na análise.
+  </p>
+</div>
+
+<form method="POST" action="/builder/{{ dataset.id }}">
+  <div class="row g-3">
+
+    <!-- ── Seleção de colunas ───────────────────────────────── -->
+    <div class="col-lg-8">
+      <div class="card mb-3">
+        <div class="card-header-primary">
+          <i class="bi bi-sliders me-2"></i>Colunas disponíveis
+          <span class="badge bg-white text-primary ms-2" style="font-size:.75rem">
+            Deixe em branco para usar todas
+          </span>
+        </div>
+        <div class="card-body">
+
+          <!-- Numéricas (métricas) -->
+          {% if num_cols %}
+          <div class="mb-4">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-primary">Numéricas (Métricas)</span>
+              <span class="text-muted small">Receita, sessões, conversões…</span>
+            </div>
+            <div class="row g-2">
+              {% for col in num_cols %}
+              <div class="col-md-6">
+                <div class="form-check p-2 border rounded-2 cursor-pointer"
+                     style="cursor:pointer"
+                     onclick="this.querySelector('input').click()">
+                  <input class="form-check-input" type="checkbox"
+                         name="selected_cols" value="{{ col }}"
+                         id="col-{{ loop.index }}" checked>
+                  <label class="form-check-label w-100" for="col-{{ loop.index }}" style="cursor:pointer">
+                    <code>{{ col }}</code>
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Categóricas (dimensões) -->
+          {% if cat_cols %}
+          <div class="mb-4">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-success">Categóricas (Dimensões)</span>
+              <span class="text-muted small">Canal, produto, região…</span>
+            </div>
+            <div class="row g-2">
+              {% for col in cat_cols %}
+              <div class="col-md-6">
+                <div class="form-check p-2 border rounded-2"
+                     style="cursor:pointer"
+                     onclick="this.querySelector('input').click()">
+                  <input class="form-check-input" type="checkbox"
+                         name="selected_cols" value="{{ col }}"
+                         id="cat-{{ loop.index }}" checked>
+                  <label class="form-check-label w-100" for="cat-{{ loop.index }}" style="cursor:pointer">
+                    <code>{{ col }}</code>
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Datas -->
+          {% if date_cols %}
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-warning text-dark">Data / Período</span>
+            </div>
+            <div class="row g-2">
+              {% for col in date_cols %}
+              <div class="col-md-6">
+                <div class="form-check p-2 border rounded-2"
+                     style="cursor:pointer"
+                     onclick="this.querySelector('input').click()">
+                  <input class="form-check-input" type="checkbox"
+                         name="selected_cols" value="{{ col }}"
+                         id="dt-{{ loop.index }}" checked>
+                  <label class="form-check-label w-100" for="dt-{{ loop.index }}" style="cursor:pointer">
+                    <code>{{ col }}</code>
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Nome do relatório + botão ────────────────────────── -->
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header-primary">
+          <i class="bi bi-tag me-2"></i>Nome do Relatório
+        </div>
+        <div class="card-body">
+          <input type="text"
+                 name="report_name"
+                 class="form-control mb-3"
+                 placeholder="Ex.: Análise de Vendas Q1 2024"
+                 value="Relatório — {{ dataset.name }}">
+
+          <div class="alert alert-info small py-2 mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            O framework analisa automaticamente as colunas selecionadas e gera
+            seções com gráficos e insights.
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-play-fill me-1"></i> Gerar Relatório
+            </button>
+            <a href="/framework/{{ dataset.id }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+{% endblock %}

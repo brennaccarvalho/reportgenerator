@@ -1,0 +1,34 @@
+# ─────────────────────────────────────────────────────────────────
+#  Dockerfile para o servidor Flask do Report Generator
+#
+#  Camadas:
+#    1. Python 3.11 slim  → imagem base leve
+#    2. libpq-dev + gcc   → para compilar psycopg2 (driver PostgreSQL)
+#    3. flask_requirements.txt → dependências Python
+#    4. Código da aplicação
+# ─────────────────────────────────────────────────────────────────
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Dependências de sistema necessárias para o driver PostgreSQL (psycopg2)
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instala dependências Python primeiro (camada separada = cache melhor)
+COPY flask_requirements.txt .
+RUN pip install --no-cache-dir -r flask_requirements.txt
+
+# Copia todo o código
+COPY . .
+
+# Cria pastas de dados que serão montadas via volume
+RUN mkdir -p data/uploads data/published_reports
+
+EXPOSE 5000
+
+# Ponto de entrada: script que garante sys.path correto
+CMD ["python", "run_flask.py"]

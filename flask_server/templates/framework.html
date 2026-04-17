@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+{% block title %}Selecionar Framework — Report Generator{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><span class="text-muted fw-normal">Passo 3 /</span> Escolha o Framework</h1>
+  <p class="page-subtitle">Cada framework aplica uma lente analítica diferente ao seu dataset.</p>
+</div>
+
+<form method="POST" action="/framework/{{ dataset.id }}" id="framework-form">
+  <input type="hidden" name="framework_id" id="framework-id-input" value="{{ selected_framework or '' }}">
+
+  <div class="row g-3 mb-4">
+    {% for fw_id, fw in frameworks.items() %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card framework-card h-100 {% if selected_framework == fw_id %}selected{% endif %}"
+           onclick="selectFramework('{{ fw_id }}')"
+           id="card-{{ fw_id }}">
+        <div class="card-body p-4">
+          <!-- Ícone e badge de recomendação -->
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="p-2 rounded-3" style="background:{{ fw.color }}20">
+              <i class="bi {{ fw.icon }} fs-3" style="color:{{ fw.color }}"></i>
+            </div>
+            {% if fw_id == 'temporal' and has_date_col %}
+              <span class="badge" style="background:#d1fae5;color:#065f46;font-size:.7rem">
+                <i class="bi bi-star-fill me-1"></i>Recomendado
+              </span>
+            {% elif fw_id == 'eda' and not has_date_col %}
+              <span class="badge" style="background:#e0e7ff;color:#3730a3;font-size:.7rem">
+                <i class="bi bi-star-fill me-1"></i>Sugerido
+              </span>
+            {% endif %}
+            <!-- Check de selecionado -->
+            <div class="selected-check d-none" id="check-{{ fw_id }}"
+                 style="width:24px;height:24px;background:var(--primary);border-radius:50%;
+                        display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-check text-white" style="font-size:.8rem"></i>
+            </div>
+          </div>
+
+          <h6 class="fw-semibold mb-1">{{ fw.name }}</h6>
+          <p class="text-muted small mb-2" style="line-height:1.5">{{ fw.description }}</p>
+          <div class="small" style="color:{{ fw.color }}">
+            <i class="bi bi-bullseye me-1"></i>{{ fw.best_for }}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="d-flex gap-2">
+    <a href="/processing/{{ dataset.id }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+    <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
+      Avançar para Builder <i class="bi bi-arrow-right ms-1"></i>
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const selectedFramework = "{{ selected_framework or '' }}";
+
+  function selectFramework(id) {
+    // Remove seleção anterior
+    document.querySelectorAll('.framework-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('[id^="check-"]').forEach(c => c.style.display = 'none');
+
+    // Aplica nova seleção
+    document.getElementById('card-' + id).classList.add('selected');
+    const check = document.getElementById('check-' + id);
+    check.style.display = 'flex';
+
+    document.getElementById('framework-id-input').value = id;
+    document.getElementById('submit-btn').disabled = false;
+  }
+
+  // Restaura seleção prévia se houver
+  if (selectedFramework) {
+    selectFramework(selectedFramework);
+  }
+</script>
+{% endblock %}

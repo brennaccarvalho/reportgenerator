@@ -18,10 +18,13 @@ ENV/
 
 # Variáveis de ambiente — NUNCA commitar
 .env
+.env.*
+!.env.example
 credentials/
 
 # Banco de dados local
 data/reports.db
+data/uploads/
 data/published_reports/
 
 # Streamlit cache
@@ -44,6 +47,13 @@ htmlcov/
 
 # Logs
 *.log
+
+# Arquivos locais de ferramentas
+.claude/
+
+# Documentacao e atalhos locais
+guia_banco_dados.html
+start_flask.bat
 
 # Build temporarios locais
 .tmp/

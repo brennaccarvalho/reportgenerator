@@ -1,0 +1,75 @@
+
+# ─────────────────────────────────────────────────────────────────
+#  Report Generator — Infraestrutura Docker
+#
+#  Serviços:
+#    postgres  → banco de dados PostgreSQL 16
+#    pgadmin   → interface web para administrar o banco (porta 5050)
+#    flask     → servidor web da aplicação       (porta 5000)
+#
+#  Como usar:
+#    docker compose up -d          → sobe tudo em background
+#    docker compose logs -f flask  → acompanha logs do Flask
+#    docker compose down           → para e remove containers
+# ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: reportgenerator_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-reportgen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres-password}
+      POSTGRES_DB: ${POSTGRES_DB:-reportgenerator}
+    ports:
+      - "5432:5432"          # expõe para conexão local (ex.: DBeaver)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # persiste dados entre restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-reportgen} -d ${POSTGRES_DB:-reportgenerator}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── pgAdmin (GUI do banco) ──────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: reportgenerator_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-change-me-pgadmin-password}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'   # modo desktop (sem login)
+    ports:
+      - "5050:80"            # acesse http://localhost:5050
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Flask (servidor da aplicação) ──────────────────────────────
+  flask:
+    build:
+      context: .
+      dockerfile: Dockerfile.flask
+    container_name: reportgenerator_flask
+    ports:
+      - "5000:5000"          # acesse http://localhost:5000
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-reportgen}:${POSTGRES_PASSWORD:-change-me-postgres-password}@postgres:5432/${POSTGRES_DB:-reportgenerator}
+      FLASK_ENV: ${FLASK_ENV:-development}
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-change-me-before-production}
+    volumes:
+      - ./data:/app/data     # monta pasta data para persistir uploads e relatórios
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:   # dados do PostgreSQL
+  pgadmin_data:    # configurações do pgAdmin
